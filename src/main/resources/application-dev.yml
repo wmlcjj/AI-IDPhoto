@@ -1,0 +1,75 @@
+spring:
+  profiles:
+    #默认连接测试环境
+    active: @spring.active@
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://127.0.0.1:3306/idphoto?autoReconnect=true&useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai
+    username: root
+    password: root
+    hikari:
+      minimum-idle: 3
+      maximum-pool-size: 10
+      max-lifetime: 30000   #不能小于30秒，否则默认回到1800秒
+      idle-timeout: 20000
+      connection-test-query: SELECT 1
+      initialization-fail-timeout: 0
+  # redis配置
+  redis:
+    # Redis数据库索引
+    database: 3
+    # Redis服务器地址
+    host: 127.0.0.1
+    # Redis服务器连接端口
+    port: 6379
+    # Redis服务器连接密码（默认为空）
+    password: 123456
+    # 连接超时时间
+    timeout: 10s
+    jedis:
+      pool:
+        # 连接池中的最小空闲连接
+        min-idle: 0
+        # 连接池中的最大空闲连接
+        max-idle: 8
+        # 连接池的最大数据库连接数
+        max-active: 1000
+        # #连接池最大阻塞等待时间（使用负值表示没有限制）
+        max-wait: -1ms
+
+mybatis-plus:
+  mapper-locations: classpath:mapper/*.xml
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    auto-mapping-behavior: FULL
+
+
+#配置
+webset:
+  #鉴黄API地址
+  safetyDomain: http://121.62.63.137:3006/
+  #证件照APi地址
+  zjzDomain: ?????
+
+dromara:
+  x-file-storage: #文件存储配置
+    default-platform: local-plus-1 #默认使用的存储平台
+    thumbnail-suffix: ".min.jpg" #缩略图后缀，例如【.min.jpg】【.png】
+    #对应平台的配置写在这里，注意缩进要对齐
+    tencent-cos:
+      - platform: tencent-cos-1 # 存储平台标识
+        enable-storage: true  # 启用存储
+        secret-id: ?????
+        secret-key: ?????
+        region: ap-guangzhou #存仓库所在地域
+        bucket-name: ????? #桶名称
+        domain: ????? # 访问域名，注意“/”结尾，例如：https://abc.cos.ap-nanjing.myqcloud.com/
+        base-path: test/ # 基础路径
+    local-plus:
+      - platform: local-plus-1 # 存储平台标识
+        enable-storage: true  #启用存储
+        enable-access: true #启用访问（线上请使用 Nginx 配置，效率更高）
+        domain: http://127.0.0.1:8081/file/preview/ # 访问域名，例如：“http://127.0.0.1:8030/file/”，注意后面要和 path-patterns 保持一致，“/”结尾，本地存储建议使用相对路径，方便后期更换域名
+        base-path: local-plus/ # 基础路径
+        path-patterns: /file/** # 访问路径
+        storage-path: D:/Temp/ # 存储路径
