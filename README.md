@@ -17,7 +17,7 @@
 **相关项目**：
 - 小程序前端请前往：
 - gitee: https://gitee.com/wmlcjj/idphoto-uniapp
-- github: https://github.com/903249871/idphoto-uniapp
+- github: https://github.com/wmlcjj/idphoto-uniapp
 ------
 
 #  📦前提准备
