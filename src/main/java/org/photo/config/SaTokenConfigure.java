@@ -29,7 +29,11 @@ public class SaTokenConfigure {
                     System.out.println("---------- 进入Sa-Token全局认证 -----------");
 
                     // 登录认证 -- 拦截所有路由，并排除/user/doLogin 用于开放登录
-                    SaRouter.match("/**").notMatch("/wechat/**","/file/preview","/MP_verify_5pwTWD7zRSautQZr.txt").check(r -> StpUtil.checkLogin());
+                    SaRouter.match("/**").notMatch("/wechat/**"
+                            ,"/file/preview"
+                            ,"/MP_verify_5pwTWD7zRSautQZr.txt"
+                            ,"/idPhotoApi/**"
+                    ).check(r -> StpUtil.checkLogin());
 
                     // 更多拦截处理方式，请参考“路由拦截式鉴权”章节 */
                 })
