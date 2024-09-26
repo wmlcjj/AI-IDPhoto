@@ -6,7 +6,7 @@
 
 # 项目介绍
 
-# <p align="center">证件照伴侣</p>
+# <p align="center">证件照伴侣-uniapp多端兼容版</p>
 <p align="center">我给你的，就是我想要的，我爱你的方式，就是我希望被爱的方式.</p>
 <p align="center"><img src="./assets/1.png"></p>
 
@@ -18,6 +18,13 @@
 - 小程序前端请前往：
 - gitee: https://gitee.com/wmlcjj/idphoto-uniapp
 - github: https://github.com/wmlcjj/idphoto-uniapp
+
+
+- 基于此项目二开：https://github.com/no1xuan/HivisionIDPhotos-wechat-weapp
+- 改动点：
+- 1、支持本地存储、阿里云OSS、腾讯云COS等各种对象存储云平台（支持私有存储、防止防盗刷）
+- 2、支持微信H5、微信小程序等多端项目（其他小程序没测试过）
+- 3、多端统一用户体系
 ------
 
 #  📦前提准备
