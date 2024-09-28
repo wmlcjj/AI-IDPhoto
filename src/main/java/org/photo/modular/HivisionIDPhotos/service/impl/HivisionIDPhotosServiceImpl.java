@@ -30,8 +30,6 @@ public class HivisionIDPhotosServiceImpl implements HivisionIDPhotosService {
     @Value("${webset.zjzDomain}")
     private String zjzDomain;
 
-    private ObjectMapper objectMapper = new ObjectMapper();
-
     public HIDHivisionResponse idphoto(HIDIdPhotoRequest request) throws IOException {
         return handleRequestAndSend(HIDOptTypeEnum.IDPHOTO.getName(), request);
     }
