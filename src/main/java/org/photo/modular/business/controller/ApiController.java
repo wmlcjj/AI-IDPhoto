@@ -23,8 +23,6 @@ public class ApiController {
     private ApiService apiService;
     @Autowired
     private WebSetDao webSetDao;
-    @Autowired
-    private PhotoService photoService;
 
 
     @PostMapping("/getWeb")
@@ -42,8 +40,34 @@ public class ApiController {
         return R.ok(idPhoto);
     }
 
+    /**
+     * 更新背景
+     * @param createPhotoDto
+     * @return
+     */
+
     @PostMapping("/updateIdPhoto")
     public R updateIdPhoto(@RequestBody CreatePhotoDto createPhotoDto) {
+        createPhotoDto.setUserId(StpUtil.getTokenInfo().getLoginId().toString());
+        PicVo idPhoto = apiService.updateIdPhoto(createPhotoDto);
+        if(null!=idPhoto.getMsg()){
+            return R.no(idPhoto.getMsg());
+        }
+        return R.ok(idPhoto);
+    }
+
+    @PostMapping("/addBackground")
+    public R addBackground(@RequestBody CreatePhotoDto createPhotoDto) {
+        createPhotoDto.setUserId(StpUtil.getTokenInfo().getLoginId().toString());
+        PicVo idPhoto = apiService.updateIdPhoto(createPhotoDto);
+        if(null!=idPhoto.getMsg()){
+            return R.no(idPhoto.getMsg());
+        }
+        return R.ok(idPhoto);
+    }
+
+    @PostMapping("/generateLayoutPhotos")
+    public R generateLayoutPhotos(@RequestBody CreatePhotoDto createPhotoDto) {
         createPhotoDto.setUserId(StpUtil.getTokenInfo().getLoginId().toString());
         PicVo idPhoto = apiService.updateIdPhoto(createPhotoDto);
         if(null!=idPhoto.getMsg()){

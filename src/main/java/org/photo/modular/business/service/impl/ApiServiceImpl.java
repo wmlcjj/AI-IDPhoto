@@ -1,35 +1,34 @@
 package org.photo.modular.business.service.impl;
 
-import com.alibaba.fastjson.JSON;
 import org.dromara.x.file.storage.core.FileInfo;
 import org.dromara.x.file.storage.core.FileStorageService;
+import org.photo.modular.HivisionIDPhotos.enums.HIDOptTypeEnum;
+import org.photo.modular.business.model.dto.CreatePhotoDto;
+import org.photo.modular.business.model.entity.Custom;
+import org.photo.modular.business.model.entity.Item;
+import org.photo.modular.business.model.entity.Photo;
+import org.photo.modular.business.model.entity.PhotoRecord;
+import org.photo.modular.business.model.vo.PicVo;
+import org.photo.modular.business.service.*;
+import org.photo.modular.HivisionIDPhotos.request.HIDAddBackgroundRequest;
+import org.photo.modular.HivisionIDPhotos.request.HIDIdPhotoRequest;
+import org.photo.modular.HivisionIDPhotos.response.HIDHivisionResponse;
+import org.photo.modular.HivisionIDPhotos.service.HivisionIDPhotosService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
-import org.springframework.http.*;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.stereotype.Service;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
-import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
-import org.photo.modular.business.model.entity.*;
-import org.photo.modular.business.model.dto.CreatePhotoDto;
-import org.photo.modular.business.model.dto.HivisionDto;
-import org.photo.modular.business.model.vo.PicVo;
-import org.photo.modular.business.service.*;
 
-import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.text.SimpleDateFormat;
 import java.util.Base64;
 import java.util.Date;
+import java.util.Objects;
 
 @SuppressWarnings("DataFlowIssue")
 @Service
@@ -46,13 +45,11 @@ public class ApiServiceImpl implements ApiService {
     private PhotoService photoService;
     @Autowired
     private PhotoRecordService photoRecordService;
-    @Autowired
-    private WebSetService webSetService;
-    @Autowired
-    private UploadService uploadService;
 
     @Autowired
     private FileStorageService fileStorageService;//注入实列
+    @Autowired
+    private HivisionIDPhotosService hivisionIDPhotosService;
 
 
 
@@ -86,42 +83,17 @@ public class ApiServiceImpl implements ApiService {
 
 
         try {
-            RestTemplate restTemplate = new RestTemplate();
+            HIDIdPhotoRequest request = new HIDIdPhotoRequest();
+            request.setInput_image_base64(createPhotoDto.getImage());
+            request.setHeight(createPhotoDto.getHeight());
+            request.setWidth(createPhotoDto.getWidth());
+            request.setFace_detect_model("retinaface-resnet50");
+            HIDHivisionResponse hivisionDto = hivisionIDPhotosService.idphoto(request);
 
-            // 构建 multipart 数据
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.MULTIPART_FORM_DATA);
-
-            MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
-            MultipartFile multipartFile = base64ToMultipartFile(createPhotoDto.getImage());
-            body.add("input_image", new MultipartInputStreamFileResource(multipartFile));
-            body.add("height",createPhotoDto.getHeight());
-            body.add("width", createPhotoDto.getWidth());
-//            body.add("human_matting_model", "birefnet-v1-lite");
-            body.add("face_detect_model", "retinaface-resnet50");
-
-            HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
-
-            ResponseEntity<String> response = restTemplate.exchange(
-                    zjzDomain+"/idphoto",
-                    HttpMethod.POST,
-                    requestEntity,
-                    String.class);
-
-            HivisionDto hivisionDto = JSON.parseObject(response.getBody(), HivisionDto.class);
             if(!hivisionDto.isStatus()){
                 picVo.setMsg("未检测到人脸或多人脸");
                 return picVo;
             }
-
-            //因为小程序需要默认初始化一张蓝底。新版本HivisionIDPhotos无法通过修改py代码来实现，只能再java再调用一次换背景接口
-            //可能会慢点，目前已经列入待优化名单
-            HivisionDto hivisionDto2 = updateIdPhotoTwo(hivisionDto.getImageBase64Standard(), "#438edb");
-
-
-            FileInfo info = fileStorageService.of(multipartFile).upload();
-            String picId = info.getId();
-
             //保存生成记录
             Photo photo = new Photo();
             photo.setUserId(createPhotoDto.getUserId());
@@ -131,7 +103,6 @@ public class ApiServiceImpl implements ApiService {
                 photo.setName(item.getName());
             }
             photo.setSize(createPhotoDto.getWidth()+"x"+createPhotoDto.getHeight());
-            photo.setOImg(picId);
             photo.setCreateTime(new Date());
             photoService.save(photo);
 
@@ -146,7 +117,7 @@ public class ApiServiceImpl implements ApiService {
             picVo.setId2(photo.getId());
             picVo.setOImg(hivisionDto.getImageBase64Hd());
             picVo.setKImg(hivisionDto.getImageBase64Standard());
-            picVo.setCImg(hivisionDto2.getImageBase64());
+            picVo.setCImg(hivisionDto.getImageBase64Standard());
             return picVo;
         } catch (Exception e) {
             e.printStackTrace();
@@ -161,7 +132,7 @@ public class ApiServiceImpl implements ApiService {
     public PicVo updateIdPhoto(CreatePhotoDto createPhotoDto) {
         PicVo picVo = new PicVo();
         try {
-            HivisionDto hivisionDto = updateIdPhotoTwo(createPhotoDto.getImage(), createPhotoDto.getColors());
+            HIDHivisionResponse hivisionDto = hidvisionRequestChange(createPhotoDto);
             if(!hivisionDto.isStatus()){
                 picVo.setMsg("未检测到人脸或多人脸");
                 return picVo;
@@ -181,36 +152,26 @@ public class ApiServiceImpl implements ApiService {
             picVo.setMsg("系统繁忙，请稍后再试");
             return picVo;
         }
-
-
     }
 
-private HivisionDto updateIdPhotoTwo(String img,String colors) throws Exception {
-    RestTemplate restTemplate = new RestTemplate();
-
-    // 构建 multipart 数据
-    HttpHeaders headers = new HttpHeaders();
-    headers.setContentType(MediaType.MULTIPART_FORM_DATA);
-
-    MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
-    MultipartFile multipartFile = base64ToMultipartFile(img);
-    body.add("input_image", new MultipartInputStreamFileResource(multipartFile));
-    body.add("color", colors);
-
-    HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
-
-    ResponseEntity<String> response = restTemplate.exchange(
-            zjzDomain+"/add_background",
-            HttpMethod.POST,
-            requestEntity,
-            String.class);
-
-
-    return JSON.parseObject(response.getBody(), HivisionDto.class);
-}
-
-
-
+    private HIDHivisionResponse hidvisionRequestChange(CreatePhotoDto createPhotoDto) throws IOException {
+        if (Objects.equals(createPhotoDto.getOptType(), HIDOptTypeEnum.ADD_BACKGROUND.getValue())) {
+            HIDAddBackgroundRequest request = new HIDAddBackgroundRequest();
+            request.setInput_image_base64(createPhotoDto.getImage());
+            request.setColor(createPhotoDto.getColors());
+            HIDHivisionResponse hivisionDto = hivisionIDPhotosService.add_background(request);
+            return hivisionDto;
+        } else if (Objects.equals(createPhotoDto.getOptType(), HIDOptTypeEnum.GENERATE_LAYOUT_PHOTOS.getValue())) {
+            HIDAddBackgroundRequest request = new HIDAddBackgroundRequest();
+            return hivisionIDPhotosService.generate_layout_photos(request);
+        } else {
+                HIDAddBackgroundRequest request = new HIDAddBackgroundRequest();
+                request.setInput_image_base64(createPhotoDto.getImage());
+                request.setColor(createPhotoDto.getColors());
+                HIDHivisionResponse hivisionDto = hivisionIDPhotosService.add_background(request);
+                return hivisionDto;
+        }
+    }
 
     @Override
     public PicVo updateUserPhonto(String userid,String img,Integer photoId) {

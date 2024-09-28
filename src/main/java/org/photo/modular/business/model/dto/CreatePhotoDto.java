@@ -20,4 +20,7 @@ public class CreatePhotoDto {
 
     private String userId;
     private Integer type;
+
+    //操作类型
+    private Integer optType;
 }
