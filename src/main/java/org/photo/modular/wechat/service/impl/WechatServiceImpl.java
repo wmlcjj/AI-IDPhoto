@@ -65,9 +65,6 @@ public class WechatServiceImpl implements IWechatService {
         JSONObject jsonopenid = JSONObject.parseObject(content);
         String openid = jsonopenid.getString("openid");
         String unionid = jsonopenid.getString("unionid");
-        if (StringUtils.isEmpty(unionid)) {
-            throw new BizException("微信登录失败");
-        }
         WechatUserInfoDto dto = new WechatUserInfoDto();
         BeanUtils.copyProperties(params, dto);
         dto.setOpenid(openid);
@@ -155,7 +152,7 @@ public class WechatServiceImpl implements IWechatService {
     private CustomerUserVo saveOrUpdateCustomerUser(CustomerUser customerUser,WechatUserInfoDto dto){
         CustomerUserVo customerUserVo = null;
         //如果openid查不到，再用unionid查询一次
-        if (ObjectUtil.isEmpty(customerUser)){
+        if (ObjectUtil.isEmpty(customerUser) && !StringUtils.isEmpty(dto.getUnionid())){
             //校验用户是否存在
             LambdaQueryWrapper<CustomerUser> userWrapper = new LambdaQueryWrapper<CustomerUser>()
                     .eq(CustomerUser::getUnionid, dto.getUnionid())
